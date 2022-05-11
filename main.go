@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"techno/handlers"
+
+	"github.com/dhucsik/technodom_case_go/handlers"
+	"github.com/gorilla/mux"
 )
 
 type Cache interface {
@@ -17,11 +20,21 @@ type Link struct {
 	HistoryLink string `json:"history_link"`
 }
 
-const portNumber = ":8080"
+const (
+	portNumber = ":8080"
+)
 
 func main() {
-	http.HandleFunc("/admin/redirects", handlers.GetAdminRedirects)
-	http.HandleFunc("/redirects", handlers.UserRedirect)
+	router := mux.NewRouter()
 
-	log.Fatal(http.ListenAndServe(portNumber, nil))
+	router.HandleFunc("/admin/redirects", handlers.GetAdminRedirects).Methods("GET")
+	router.HandleFunc("/admin/redirects", handlers.PostAdminRedirects).Methods("POST")
+	router.HandleFunc("/admin/redirects/{id:[0-9]+}", handlers.GetAdminRedirectsId).Methods("GET")
+	router.HandleFunc("/admin/redirects/{id:[0-9]+}", handlers.PatchAdminRedirectsId).Methods("PATCH")
+	router.HandleFunc("/admin/redirects/{id:[0-9]+}", handlers.DeleteAdminRedirectId).Methods("DELETE")
+
+	router.HandleFunc("/redirects", handlers.UserRedirect).Methods("GET")
+
+	fmt.Println("Starting server at", portNumber)
+	log.Fatal(http.ListenAndServe(portNumber, router))
 }
