@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/dhucsik/technodom_case_go/cache"
 	"github.com/dhucsik/technodom_case_go/setupdb"
 	"github.com/gorilla/mux"
 )
+
+var myCache = make(cache.MyCache)
 
 type Link struct {
 	Id          int    `json:"id"`
@@ -203,41 +206,48 @@ func DeleteAdminRedirectId(w http.ResponseWriter, r *http.Request) {
 
 func UserRedirect(w http.ResponseWriter, r *http.Request) {
 	link := r.URL.Query().Get("link")
-	db := setupdb.SetupDB()
 
-	row, err := db.Query("SELECT * FROM links_table WHERE active_link = $1;", link)
-
-	if err != nil {
-		panic(err)
-	}
-
-	if row.Next() {
-		w.WriteHeader(200)
-		fmt.Fprint(w, "HTTP Response Status: 200 OK")
+	value, ok := myCache[link]
+	if ok {
+		http.Redirect(w, r, fmt.Sprint("/redirects?link="+value), 301)
 	} else {
-		row, err := db.Query("SELECT * FROM links_table WHERE history_link = $1;", link)
+		db := setupdb.SetupDB()
+
+		row, err := db.Query("SELECT * FROM links_table WHERE active_link = $1;", link)
 
 		if err != nil {
 			panic(err)
 		}
 
 		if row.Next() {
-			var id int
-			var activeLink string
-			var historyLink string
-			err = row.Scan(&id, &activeLink, &historyLink)
+			w.WriteHeader(200)
+			fmt.Fprint(w, "HTTP Response Status: 200 OK")
+		} else {
+			row, err := db.Query("SELECT * FROM links_table WHERE history_link = $1;", link)
 
 			if err != nil {
 				panic(err)
 			}
-			record := Link{
-				Id:          id,
-				ActiveLink:  activeLink,
-				HistoryLink: historyLink,
+
+			if row.Next() {
+				var id int
+				var activeLink string
+				var historyLink string
+				err = row.Scan(&id, &activeLink, &historyLink)
+
+				if err != nil {
+					panic(err)
+				}
+				record := Link{
+					Id:          id,
+					ActiveLink:  activeLink,
+					HistoryLink: historyLink,
+				}
+				myCache[historyLink] = activeLink
+				http.Redirect(w, r, fmt.Sprint("/redirects?link="+record.ActiveLink), 301)
+			} else {
+				fmt.Fprint(w, "No match found")
 			}
-			http.Redirect(w, r, fmt.Sprint("/redirects?link="+record.ActiveLink), 301)
-		} else {
-			fmt.Fprint(w, "No match found")
 		}
 	}
 }
