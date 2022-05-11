@@ -3,9 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/dhucsik/technodom_case_go/setupdb"
+	"github.com/evanphx/json-patch/v5"
 	"github.com/gorilla/mux"
 )
 
@@ -58,7 +60,7 @@ func GetAdminRedirects(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAdminRedirects(w http.ResponseWriter, r *http.Request) {
-	// create new sthing in db
+	// insert new record in db
 	fmt.Fprint(w, "Post method received.")
 
 	decoder := json.NewDecoder(r.Body)
@@ -95,7 +97,7 @@ func PostAdminRedirects(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
-	//get specified object
+	//get specified record
 	fmt.Fprint(w, "Get method received")
 
 	params := mux.Vars(r)
@@ -136,11 +138,77 @@ func GetAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	//
 	fmt.Fprint(w, "Patch method received")
+
+	params := mux.Vars(r)
+
+	idd := params["id"]
+
+	db := setupdb.SetupDB()
+
+	row, err := db.Query("SELECT * FROM links_table WHERE id = $1;", idd)
+
+	if err != nil {
+		panic(err)
+	}
+
+	var records []Link
+	for row.Next() {
+		var id int
+		var activeLink string
+		var historyLink string
+
+		err = row.Scan(&id, &activeLink, &historyLink)
+
+		if err != nil {
+			panic(err)
+		}
+		records = append(records, Link{
+			Id:          id,
+			ActiveLink:  activeLink,
+			HistoryLink: historyLink,
+		})
+	}
+
+	record := &records[0]
+
+	recordBytes, err := json.Marshal(record)
+	if err != nil {
+		panic(err)
+	}
+	request, _ := ioutil.ReadAll(r.Body)
+	patchedJSON, _ := jsonpatch.MergePatch(recordBytes, request)
+
+	var updatedRec Link
+	err = json.Unmarshal(patchedJSON, &updatedRec)
+
+	if err != nil {
+		panic(err)
+	}
+
+	response := JsonResponse{Type: "success", Data: []Link{updatedRec}, Message: "The record has been updated successfully!"}
+	json.NewEncoder(w).Encode(response)
 }
 
 func DeleteAdminRedirectId(w http.ResponseWriter, r *http.Request) {
-	// delete sthing from db
+	// delete record from db
 	fmt.Fprint(w, "Delete method received")
+	params := mux.Vars(r)
+
+	id := params["id"]
+
+	var response = JsonResponse{}
+
+	db := setupdb.SetupDB()
+
+	_, err := db.Exec("DELETE FROM links_table WHERE id = $1", id)
+
+	if err != nil {
+		panic(err)
+	}
+
+	response = JsonResponse{Type: "success", Message: "The record has been deleted successfully!"}
+
+	json.NewEncoder(w).Encode(response)
 }
 
 func UserRedirect(w http.ResponseWriter, r *http.Request) {
