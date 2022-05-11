@@ -3,11 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/dhucsik/technodom_case_go/setupdb"
-	"github.com/evanphx/json-patch/v5"
 	"github.com/gorilla/mux"
 )
 
@@ -151,7 +149,8 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	var records []Link
+	var record Link
+
 	for row.Next() {
 		var id int
 		var activeLink string
@@ -162,30 +161,28 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		records = append(records, Link{
+		record = Link{
 			Id:          id,
 			ActiveLink:  activeLink,
 			HistoryLink: historyLink,
-		})
+		}
 	}
 
-	record := &records[0]
+	decoder := json.NewDecoder(r.Body)
 
-	recordBytes, err := json.Marshal(record)
-	if err != nil {
-		panic(err)
-	}
-	request, _ := ioutil.ReadAll(r.Body)
-	patchedJSON, _ := jsonpatch.MergePatch(recordBytes, request)
-
-	var updatedRec Link
-	err = json.Unmarshal(patchedJSON, &updatedRec)
+	var post Link
+	err = decoder.Decode(&post)
 
 	if err != nil {
 		panic(err)
 	}
 
-	response := JsonResponse{Type: "success", Data: []Link{updatedRec}, Message: "The record has been updated successfully!"}
+	activeLink := post.ActiveLink
+	historyLink := record.ActiveLink
+
+	_ = db.QueryRow("UPDATE links_table SET active_link = $1, history_link = &2 where id = $3;", activeLink, historyLink, idd)
+
+	response := JsonResponse{Type: "success", Message: "The record has been updated successfully!"}
 	json.NewEncoder(w).Encode(response)
 }
 
