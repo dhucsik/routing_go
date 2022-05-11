@@ -9,12 +9,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Cache interface {
-	Add(key, value string)
-	Get(key string) (value string, ok bool)
-	Len() int
-}
-
 const (
 	portNumber = ":8080"
 )

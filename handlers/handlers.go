@@ -23,7 +23,6 @@ type JsonResponse struct {
 
 func GetAdminRedirects(w http.ResponseWriter, r *http.Request) {
 	// get list of sthing from db
-	fmt.Fprint(w, "Get method received.")
 	db := setupdb.SetupDB()
 
 	rows, err := db.Query("SELECT * FROM links_table;")
@@ -59,8 +58,6 @@ func GetAdminRedirects(w http.ResponseWriter, r *http.Request) {
 
 func PostAdminRedirects(w http.ResponseWriter, r *http.Request) {
 	// insert new record in db
-	fmt.Fprint(w, "Post method received.")
-
 	decoder := json.NewDecoder(r.Body)
 
 	var post []Link
@@ -96,8 +93,6 @@ func PostAdminRedirects(w http.ResponseWriter, r *http.Request) {
 
 func GetAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	//get specified record
-	fmt.Fprint(w, "Get method received")
-
 	params := mux.Vars(r)
 
 	idd := params["id"]
@@ -110,8 +105,8 @@ func GetAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	var record []Link
-	for row.Next() {
+	var record Link
+	if row.Next() {
 		var id int
 		var activeLink string
 		var historyLink string
@@ -121,22 +116,20 @@ func GetAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		record = append(record, Link{
+		record = Link{
 			Id:          id,
 			ActiveLink:  activeLink,
 			HistoryLink: historyLink,
-		})
+		}
 	}
 
-	response := JsonResponse{Type: "success", Data: record}
+	response := JsonResponse{Type: "success", Data: []Link{record}}
 
 	json.NewEncoder(w).Encode(response)
 }
 
 func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	//
-	fmt.Fprint(w, "Patch method received")
-
 	params := mux.Vars(r)
 
 	idd := params["id"]
@@ -151,7 +144,7 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 
 	var record Link
 
-	for row.Next() {
+	if row.Next() {
 		var id int
 		var activeLink string
 		var historyLink string
@@ -189,7 +182,6 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 
 func DeleteAdminRedirectId(w http.ResponseWriter, r *http.Request) {
 	// delete record from db
-	fmt.Fprint(w, "Delete method received")
 	params := mux.Vars(r)
 
 	id := params["id"]
@@ -210,9 +202,6 @@ func DeleteAdminRedirectId(w http.ResponseWriter, r *http.Request) {
 }
 
 func UserRedirect(w http.ResponseWriter, r *http.Request) {
-	// do something
-	fmt.Fprint(w, "Get method received.")
-
 	link := r.URL.Query().Get("link")
 	db := setupdb.SetupDB()
 
@@ -224,5 +213,31 @@ func UserRedirect(w http.ResponseWriter, r *http.Request) {
 
 	if row.Next() {
 		w.WriteHeader(200)
+		fmt.Fprint(w, "HTTP Response Status: 200 OK")
+	} else {
+		row, err := db.Query("SELECT * FROM links_table WHERE history_link = $1;", link)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if row.Next() {
+			var id int
+			var activeLink string
+			var historyLink string
+			err = row.Scan(&id, &activeLink, &historyLink)
+
+			if err != nil {
+				panic(err)
+			}
+			record := Link{
+				Id:          id,
+				ActiveLink:  activeLink,
+				HistoryLink: historyLink,
+			}
+			http.Redirect(w, r, fmt.Sprint("/redirects?link="+record.ActiveLink), 301)
+		} else {
+			fmt.Fprint(w, "No match found")
+		}
 	}
 }
