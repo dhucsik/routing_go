@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var myCache = make(cache.MyCache)
+var myCache = cache.NewMyCache()
 
 type Link struct {
 	Id          int    `json:"id"`
@@ -207,7 +207,7 @@ func DeleteAdminRedirectId(w http.ResponseWriter, r *http.Request) {
 func UserRedirect(w http.ResponseWriter, r *http.Request) {
 	link := r.URL.Query().Get("link")
 
-	value, ok := myCache[link]
+	value, ok := myCache.Get(link)
 	if ok {
 		http.Redirect(w, r, fmt.Sprint("/redirects?link="+value), 301)
 	} else {
@@ -243,7 +243,9 @@ func UserRedirect(w http.ResponseWriter, r *http.Request) {
 					ActiveLink:  activeLink,
 					HistoryLink: historyLink,
 				}
-				myCache[historyLink] = activeLink
+				if myCache.Len() <= 1000 {
+					myCache.Add(historyLink, activeLink)
+				}
 				http.Redirect(w, r, fmt.Sprint("/redirects?link="+record.ActiveLink), 301)
 			} else {
 				fmt.Fprint(w, "No match found")

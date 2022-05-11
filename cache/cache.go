@@ -6,17 +6,26 @@ type Cache interface {
 	Len() int
 }
 
-type MyCache map[string]string
+func NewMyCache() MyCache {
+	m := MyCache{
+		make(map[string]string),
+	}
+	return m
+}
+
+type MyCache struct {
+	cache map[string]string
+}
 
 func (m MyCache) Add(key, value string) {
-	m[key] = value
+	m.cache[key] = value
 }
 
 func (m MyCache) Get(key string) (string, bool) {
-	value, ok := m[key]
+	value, ok := m.cache[key]
 	return value, ok
 }
 
 func (m MyCache) Len() int {
-	return len(m)
+	return len(m.cache)
 }
