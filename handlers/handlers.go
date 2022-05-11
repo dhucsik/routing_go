@@ -155,7 +155,6 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 		var id int
 		var activeLink string
 		var historyLink string
-
 		err = row.Scan(&id, &activeLink, &historyLink)
 
 		if err != nil {
@@ -173,8 +172,6 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	var post Link
 	err = decoder.Decode(&post)
 
-	fmt.Println(post.ActiveLink)
-
 	if err != nil {
 		panic(err)
 	}
@@ -182,7 +179,7 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	activeLink := post.ActiveLink
 	historyLink := record.ActiveLink
 
-	_, err = db.Exec("UPDATE links_table SET active_link = $1, history_link = &2 where id = $3;", activeLink, historyLink, idd)
+	_, err = db.Exec("UPDATE links_table SET active_link = $1, history_link = $2 where id = $3;", activeLink, historyLink, idd)
 	if err != nil {
 		panic(err)
 	}
@@ -215,4 +212,17 @@ func DeleteAdminRedirectId(w http.ResponseWriter, r *http.Request) {
 func UserRedirect(w http.ResponseWriter, r *http.Request) {
 	// do something
 	fmt.Fprint(w, "Get method received.")
+
+	link := r.URL.Query().Get("link")
+	db := setupdb.SetupDB()
+
+	row, err := db.Query("SELECT * FROM links_table WHERE active_link = $1;", link)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if row.Next() {
+		w.WriteHeader(200)
+	}
 }
