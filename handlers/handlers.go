@@ -61,15 +61,15 @@ func PostAdminRedirects(w http.ResponseWriter, r *http.Request) {
 	// create new sthing in db
 	fmt.Fprint(w, "Post method received.")
 
-	activeLink := r.FormValue("activelink")
-	historyLink := r.FormValue("historylink")
+	activeLink := r.FormValue("active_link")
+	historyLink := r.FormValue("history_link")
 
 	var response = JsonResponse{}
 
 	db := setupdb.SetupDB()
 
 	var lastInsertId int
-	err := db.QueryRow("INSERT INTO links_table VALUES($1, $2) returning id;", activeLink, historyLink).Scan(&lastInsertId)
+	err := db.QueryRow("INSERT INTO links_table(active_link, history_link) VALUES($1, $2) returning id;", activeLink, historyLink).Scan(&lastInsertId)
 
 	if err != nil {
 		panic(err)
