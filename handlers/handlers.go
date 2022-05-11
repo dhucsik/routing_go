@@ -63,28 +63,30 @@ func PostAdminRedirects(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 
-	var post Link
+	var post []Link
 	err := decoder.Decode(&post)
 
 	if err != nil {
 		panic(err)
 	}
 
-	activeLink := post.ActiveLink
-	historyLink := post.HistoryLink
-
-	fmt.Println(activeLink)
-	fmt.Println(historyLink)
-
 	var response = JsonResponse{}
 
-	db := setupdb.SetupDB()
+	for _, p := range post {
+		activeLink := p.ActiveLink
+		historyLink := p.HistoryLink
 
-	var lastInsertId int
-	err = db.QueryRow("INSERT INTO links_table(active_link, history_link) VALUES($1, $2) returning id;", activeLink, historyLink).Scan(&lastInsertId)
+		fmt.Println(activeLink)
+		fmt.Println(historyLink)
 
-	if err != nil {
-		panic(err)
+		db := setupdb.SetupDB()
+
+		var lastInsertId int
+		err = db.QueryRow("INSERT INTO links_table(active_link, history_link) VALUES($1, $2) returning id;", activeLink, historyLink).Scan(&lastInsertId)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	response = JsonResponse{Type: "success", Message: "The record has been inserted successfully!"}
