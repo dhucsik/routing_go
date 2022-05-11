@@ -3,6 +3,8 @@ package setupdb
 import (
 	"database/sql"
 	"fmt"
+
+	_ "github.com/lib/pq"
 )
 
 const (

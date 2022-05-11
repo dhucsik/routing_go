@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/dhucsik/technodom_case_go/setupdb"
+	"github.com/gorilla/mux"
 )
 
 type Link struct {
@@ -59,11 +60,63 @@ func GetAdminRedirects(w http.ResponseWriter, r *http.Request) {
 func PostAdminRedirects(w http.ResponseWriter, r *http.Request) {
 	// create new sthing in db
 	fmt.Fprint(w, "Post method received.")
+
+	activeLink := r.FormValue("activelink")
+	historyLink := r.FormValue("historylink")
+
+	var response = JsonResponse{}
+
+	db := setupdb.SetupDB()
+
+	var lastInsertId int
+	err := db.QueryRow("INSERT INTO links_table VALUES($1, $2) returning id;", activeLink, historyLink).Scan(&lastInsertId)
+
+	if err != nil {
+		panic(err)
+	}
+
+	response = JsonResponse{Type: "success", Message: "The record has been inserted successfully!"}
+
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	//get specified object
 	fmt.Fprint(w, "Get method received")
+
+	params := mux.Vars(r)
+
+	idd := params["id"]
+
+	db := setupdb.SetupDB()
+
+	row, err := db.Query("SELECT * FROM links_table WHERE id = $1;", idd)
+
+	if err != nil {
+		panic(err)
+	}
+
+	var record []Link
+	for row.Next() {
+		var id int
+		var activeLink string
+		var historyLink string
+
+		err = row.Scan(&id, &activeLink, &historyLink)
+
+		if err != nil {
+			panic(err)
+		}
+		record = append(record, Link{
+			Id:          id,
+			ActiveLink:  activeLink,
+			HistoryLink: historyLink,
+		})
+	}
+
+	response := JsonResponse{Type: "success", Data: record}
+
+	json.NewEncoder(w).Encode(response)
 }
 
 func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
