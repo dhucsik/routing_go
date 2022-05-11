@@ -173,6 +173,8 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	var post Link
 	err = decoder.Decode(&post)
 
+	fmt.Println(post.ActiveLink)
+
 	if err != nil {
 		panic(err)
 	}
@@ -180,7 +182,11 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	activeLink := post.ActiveLink
 	historyLink := record.ActiveLink
 
-	_ = db.QueryRow("UPDATE links_table SET active_link = $1, history_link = &2 where id = $3;", activeLink, historyLink, idd)
+	var lastInsertId int
+	err = db.QueryRow("UPDATE links_table SET active_link = $1, history_link = &2 where id = $3 returning id;", activeLink, historyLink, idd).Scan(&lastInsertId)
+	if err != nil {
+		panic(err)
+	}
 
 	response := JsonResponse{Type: "success", Message: "The record has been updated successfully!"}
 	json.NewEncoder(w).Encode(response)
