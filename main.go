@@ -15,11 +15,6 @@ type Cache interface {
 	Len() int
 }
 
-type Link struct {
-	ActiveLink  string `json:"active_link"`
-	HistoryLink string `json:"history_link"`
-}
-
 const (
 	portNumber = ":8080"
 )
