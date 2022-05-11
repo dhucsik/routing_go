@@ -150,10 +150,12 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var record Link
-	var id int
-	var activeLink string
-	var historyLink string
+
 	for row.Next() {
+		var id int
+		var activeLink string
+		var historyLink string
+
 		err = row.Scan(&id, &activeLink, &historyLink)
 
 		if err != nil {
@@ -177,15 +179,13 @@ func PatchAdminRedirectsId(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	activeLink = post.ActiveLink
-	historyLink = record.ActiveLink
+	activeLink := post.ActiveLink
+	historyLink := record.ActiveLink
 
-	var lastInsertId int
-	err = db.QueryRow("UPDATE links_table SET active_link = $1, history_link = &2 where id = $3 returning id;", activeLink, historyLink, id).Scan(&lastInsertId)
+	_, err = db.Exec("UPDATE links_table SET active_link = $1, history_link = &2 where id = $3;", activeLink, historyLink, idd)
 	if err != nil {
 		panic(err)
 	}
-
 	response := JsonResponse{Type: "success", Message: "The record has been updated successfully!"}
 	json.NewEncoder(w).Encode(response)
 }
