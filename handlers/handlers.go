@@ -64,6 +64,9 @@ func PostAdminRedirects(w http.ResponseWriter, r *http.Request) {
 	activeLink := r.FormValue("active_link")
 	historyLink := r.FormValue("history_link")
 
+	fmt.Println(activeLink)
+	fmt.Println(historyLink)
+
 	var response = JsonResponse{}
 
 	db := setupdb.SetupDB()
