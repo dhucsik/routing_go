@@ -2,6 +2,8 @@
 
 ## Installation
 
+Download all files except images and go.mod, go.sum files then in terminal type next commands.
+
 ```bash
 go mod init github.com/dhucsik/technodom_case_go
 ```
