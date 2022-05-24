@@ -1,5 +1,8 @@
 Кейс-чемпионат при отборе на стажировку на Технодом.
 
+Solving the problem with routing changes
+
+
 ## Installation
 
 Download all files except images and go.mod, go.sum files then in terminal type next commands.
